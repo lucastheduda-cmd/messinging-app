@@ -39,7 +39,8 @@
       <!-- Logged-in user info + logout at the bottom -->
       <div class="sidebar-footer">
         <div class="sidebar-user">
-          <div class="avatar" id="my-avatar"></div>
+          <!-- Click your avatar to customize it! -->
+          <div class="avatar" id="my-avatar" onclick="openAvatarModal()" title="Customize avatar" style="cursor:pointer"></div>
           <span id="my-username">Loading...</span>
         </div>
         <button class="logout-btn" onclick="logout()" title="Log out">⏻</button>
@@ -76,6 +77,31 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- ── Avatar Customization Modal ──────────────────────────── -->
+  <!-- A "modal" is a popup that appears on top of everything else -->
+  <div class="modal-backdrop hidden" id="avatar-modal-backdrop" onclick="closeAvatarModal()"></div>
+  <div class="modal hidden" id="avatar-modal">
+    <h2 class="modal-title">Customize Your Avatar</h2>
+
+    <!-- Live preview -->
+    <div class="avatar-preview-wrap">
+      <div class="avatar avatar-preview" id="avatar-preview"></div>
+    </div>
+
+    <!-- Color picker -->
+    <p class="modal-label">Choose a color</p>
+    <div class="color-grid" id="color-grid"></div>
+
+    <!-- Emoji picker -->
+    <p class="modal-label">Choose an emoji <span class="modal-sublabel">(or none to use your initial)</span></p>
+    <div class="emoji-grid" id="emoji-grid"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAvatarModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveAvatar()">Save</button>
+    </div>
   </div>
 
   <!-- Socket.io client is served automatically by the server -->
