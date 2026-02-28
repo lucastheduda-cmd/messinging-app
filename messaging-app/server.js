@@ -120,8 +120,12 @@ io.on('connection', (socket) => {
   socket.on('authenticate', async (token) => {
     try {
       // Verify the token is real and hasn't been tampered with
-      const user = jwt.verify(token, JWT_SECRET);
-      socket.user = user; // Attach user info to this socket for later
+      const decoded = jwt.verify(token, JWT_SECRET);
+
+      // Load the full user from DB so we have their avatar info too
+      const user = await db.getUserById(decoded.id);
+      if (!user) throw new Error('User not found');
+      socket.user = user;
 
       // Track this socket under the user's ID
       if (!userSockets.has(user.id)) {
@@ -134,8 +138,8 @@ io.on('connection', (socket) => {
 
       socket.emit('authenticated', { success: true });
 
-      // Tell everyone this user is now online
-      io.emit('user_online', { id: user.id, username: user.username });
+      // Tell everyone this user is now online (include avatar so sidebar updates)
+      io.emit('user_online', { id: user.id, username: user.username, avatar_color: user.avatar_color, avatar_emoji: user.avatar_emoji });
 
       // Send the full user list so they can see who to DM
       const users = await db.getAllUsers();
@@ -185,6 +189,8 @@ io.on('connection', (socket) => {
         id: saved.id,
         sender_id: socket.user.id,
         sender_username: socket.user.username,
+        avatar_color: socket.user.avatar_color,
+        avatar_emoji: socket.user.avatar_emoji,
         room,
         content: content.trim(),
         created_at: saved.created_at
@@ -225,6 +231,38 @@ io.on('connection', (socket) => {
       }
     }
   });
+});
+
+// ─── Avatar route ─────────────────────────────────────────────────────────────
+
+// PUT /api/avatar - Save a user's chosen color and emoji
+// This requires a valid JWT token in the Authorization header
+app.put('/api/avatar', async (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  try {
+    const user = jwt.verify(auth.slice(7), JWT_SECRET);
+    const { color, emoji } = req.body;
+
+    // Basic validation
+    if (!/^#[0-9a-fA-F]{6}$/.test(color)) {
+      return res.status(400).json({ error: 'Invalid color' });
+    }
+
+    await db.updateUserAvatar(user.id, color, emoji || '');
+
+    // Tell everyone in real-time that this user updated their avatar
+    // so their avatar changes everywhere without a page refresh
+    io.emit('avatar_updated', { id: user.id, avatar_color: color, avatar_emoji: emoji || '' });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // ─── Start server ─────────────────────────────────────────────────────────────
