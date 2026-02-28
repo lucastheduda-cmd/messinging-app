@@ -8,19 +8,16 @@
 </head>
 <body class="chat-page">
 
-  <!-- Mobile overlay: tap it to close the sidebar -->
   <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <div class="chat-layout">
 
     <!-- ── Left Sidebar ────────────────────────────────── -->
     <aside class="sidebar" id="sidebar">
-
       <div class="sidebar-header">
         <span class="app-name">💬 ChatApp</span>
       </div>
 
-      <!-- Group Chat Section -->
       <div class="sidebar-section">
         <p class="sidebar-label">Channels</p>
         <button class="room-btn active" id="room-general" onclick="openRoom('general', '#general')">
@@ -28,73 +25,86 @@
         </button>
       </div>
 
-      <!-- Direct Messages Section -->
       <div class="sidebar-section">
         <p class="sidebar-label">Direct Messages</p>
-        <div id="dm-list">
-          <!-- Users get added here by client.js -->
-        </div>
+        <div id="dm-list"></div>
       </div>
 
-      <!-- Logged-in user info + logout at the bottom -->
       <div class="sidebar-footer">
         <div class="sidebar-user">
-          <!-- Click your avatar to customize it! -->
           <div class="avatar" id="my-avatar" onclick="openAvatarModal()" title="Customize avatar" style="cursor:pointer"></div>
           <span id="my-username">Loading...</span>
         </div>
         <button class="logout-btn" onclick="logout()" title="Log out">⏻</button>
       </div>
-
     </aside>
 
     <!-- ── Main Chat Area ──────────────────────────────── -->
     <main class="chat-main">
 
-      <!-- Top bar: room name + hamburger button for mobile -->
+      <!-- Header -->
       <div class="chat-header">
         <button class="hamburger" onclick="toggleSidebar()">☰</button>
-        <div class="chat-header-info">
-          <span class="chat-title" id="chat-title"># general</span>
+        <span class="chat-title" id="chat-title"># general</span>
+        <div class="header-actions">
+          <button class="header-btn" id="search-toggle" onclick="toggleSearch()" title="Search messages">🔍</button>
+          <button class="header-btn" id="sound-toggle" onclick="toggleSound()" title="Toggle notification sound">🔔</button>
+          <button class="clear-btn hidden" id="clear-btn" onclick="clearChat()" title="Clear all messages">🗑️ Clear</button>
         </div>
       </div>
 
-      <!-- Messages scroll here -->
+      <!-- Search bar (hidden by default) -->
+      <div class="search-bar hidden" id="search-bar">
+        <input type="text" id="search-input" placeholder="Search messages..." oninput="searchMessages(this.value)" autocomplete="off" />
+        <button onclick="closeSearch()">✕</button>
+      </div>
+
+      <!-- Messages -->
       <div class="messages-area" id="messages-area">
         <p class="messages-placeholder">Loading messages...</p>
       </div>
 
-      <!-- Message input bar -->
+      <!-- Image preview (shown when you paste an image) -->
+      <div class="image-preview-area hidden" id="image-preview-area">
+        <button class="remove-image-btn" onclick="clearPendingImage()">✕</button>
+        <img id="image-preview" src="" alt="Image to send" />
+      </div>
+
+      <!-- Message input -->
       <div class="message-input-area">
-        <input
-          type="text"
-          id="message-input"
-          placeholder="Message #general"
-          maxlength="2000"
-          autocomplete="off"
-        />
+        <label class="attach-btn" title="Attach image">
+          📎
+          <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileSelect(event)" />
+        </label>
+        <input type="text" id="message-input" placeholder="Message #general" maxlength="2000" autocomplete="off" />
         <button class="send-btn" onclick="sendMessage()">Send</button>
       </div>
 
     </main>
   </div>
 
-  <!-- ── Avatar Customization Modal ──────────────────────────── -->
-  <!-- A "modal" is a popup that appears on top of everything else -->
+  <!-- ── Avatar Modal ──────────────────────────────────────────────────────── -->
   <div class="modal-backdrop hidden" id="avatar-modal-backdrop" onclick="closeAvatarModal()"></div>
   <div class="modal hidden" id="avatar-modal">
     <h2 class="modal-title">Customize Your Avatar</h2>
 
-    <!-- Live preview -->
     <div class="avatar-preview-wrap">
       <div class="avatar avatar-preview" id="avatar-preview"></div>
     </div>
 
-    <!-- Color picker -->
+    <!-- Profile picture upload -->
+    <p class="modal-label">Profile Picture <span class="modal-sublabel">(replaces color & emoji)</span></p>
+    <div class="pfp-section">
+      <label class="pfp-upload-btn">
+        📷 Upload Photo
+        <input type="file" id="pfp-input" accept="image/*" style="display:none" onchange="handlePfpUpload(event)" />
+      </label>
+      <button class="btn-secondary" id="pfp-remove-btn" onclick="removePfp()" style="display:none">Remove Photo</button>
+    </div>
+
     <p class="modal-label">Choose a color</p>
     <div class="color-grid" id="color-grid"></div>
 
-    <!-- Emoji picker -->
     <p class="modal-label">Choose an emoji <span class="modal-sublabel">(or none to use your initial)</span></p>
     <div class="emoji-grid" id="emoji-grid"></div>
 
@@ -104,7 +114,16 @@
     </div>
   </div>
 
-  <!-- Socket.io client is served automatically by the server -->
+  <!-- ── Reaction picker popup ─────────────────────────────────────────────── -->
+  <div class="reaction-picker hidden" id="reaction-picker">
+    <button onclick="pickReaction('👍')">👍</button>
+    <button onclick="pickReaction('❤️')">❤️</button>
+    <button onclick="pickReaction('😂')">😂</button>
+    <button onclick="pickReaction('😮')">😮</button>
+    <button onclick="pickReaction('😢')">😢</button>
+    <button onclick="pickReaction('🔥')">🔥</button>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
