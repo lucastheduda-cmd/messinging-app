@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat App - Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-card">
+    <h1 class="auth-logo">💬 ChatApp</h1>
+    <p class="auth-subtitle">Chat with your friends in real time</p>
+
+    <!-- Tab buttons to switch between Login and Register -->
+    <div class="auth-tabs">
+      <button class="tab-btn active" id="tab-login" onclick="showTab('login')">Log In</button>
+      <button class="tab-btn" id="tab-register" onclick="showTab('register')">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" placeholder="your username" autocomplete="username" required />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="your password" autocomplete="current-password" required />
+      </div>
+      <p class="auth-error" id="login-error"></p>
+      <button type="submit" class="btn-primary" id="login-btn">Log In</button>
+    </form>
+
+    <!-- Register Form (hidden by default) -->
+    <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label for="reg-username">Choose a username</label>
+        <input type="text" id="reg-username" placeholder="e.g. cooluser99" autocomplete="username" required />
+        <small>Letters, numbers, and underscores only</small>
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Choose a password</label>
+        <input type="password" id="reg-password" placeholder="at least 6 characters" autocomplete="new-password" required />
+      </div>
+      <p class="auth-error" id="reg-error"></p>
+      <button type="submit" class="btn-primary" id="reg-btn">Create Account</button>
+    </form>
+  </div>
+
+  <script>
+    // If already logged in, skip straight to the chat page
+    if (localStorage.getItem('token')) {
+      window.location.href = '/chat.html';
+    }
+
+    // Switch between the Login and Sign Up tabs
+    function showTab(tab) {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const loginTab = document.getElementById('tab-login');
+      const registerTab = document.getElementById('tab-register');
+
+      if (tab === 'login') {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        loginTab.classList.remove('active');
+        registerTab.classList.add('active');
+      }
+    }
+
+    // Called when the login form is submitted
+    async function handleLogin(event) {
+      event.preventDefault(); // Stop the page from reloading
+
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errorEl = document.getElementById('login-error');
+      const btn = document.getElementById('login-btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+      errorEl.textContent = '';
+
+      try {
+        // Send username + password to the server
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error;
+          return;
+        }
+
+        // Save our login token and go to the chat page
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('userId', data.id);
+        window.location.href = '/chat.html';
+
+      } catch (err) {
+        errorEl.textContent = 'Could not connect to server. Try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+      }
+    }
+
+    // Called when the register form is submitted
+    async function handleRegister(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('reg-username').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const errorEl = document.getElementById('reg-error');
+      const btn = document.getElementById('reg-btn');
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+      errorEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error;
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('userId', data.id);
+        window.location.href = '/chat.html';
+
+      } catch (err) {
+        errorEl.textContent = 'Could not connect to server. Try again.';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+  </script>
+</body>
+</html>
