@@ -1,22 +1,14 @@
 // db.js - Database connection and queries
-// Think of this file as a "helper" that handles all communication with the database.
-// The rest of the app just calls functions like db.saveMessage() without
-// needing to know the details of how SQL works.
 
 const { Pool } = require('pg');
 
-// Pool = a group of database connections that get reused.
-// The DATABASE_URL tells it where the database lives (set in .env file).
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // SSL is required when connecting to cloud databases like Neon.tech
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// Creates the tables if they don't exist yet.
-// This runs once when the server starts up.
 async function init() {
-  // Users table: stores accounts
+  // Users table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -26,8 +18,12 @@ async function init() {
     )
   `);
 
-  // Messages table: stores all chat messages
-  // "room" is either "general" or "dm:1:2" (a DM between user #1 and user #2)
+  // Add avatar columns to existing users table if they don't exist yet.
+  // "IF NOT EXISTS" means this is safe to run every time — it won't break anything.
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color VARCHAR(7) DEFAULT '#7289da'`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_emoji VARCHAR(10) DEFAULT ''`);
+
+  // Messages table
   await pool.query(`
     CREATE TABLE IF NOT EXISTS messages (
       id SERIAL PRIMARY KEY,
@@ -38,7 +34,6 @@ async function init() {
     )
   `);
 
-  // An index makes looking up messages by room much faster
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_messages_room ON messages(room, created_at)
   `);
@@ -46,33 +41,47 @@ async function init() {
   console.log('Database tables ready!');
 }
 
-// Save a new user to the database
 async function createUser(username, passwordHash) {
   const result = await pool.query(
-    'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username',
+    'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, avatar_color, avatar_emoji',
     [username, passwordHash]
   );
   return result.rows[0];
 }
 
-// Find a user by their username (used during login)
 async function getUserByUsername(username) {
   const result = await pool.query(
     'SELECT * FROM users WHERE username = $1',
     [username]
   );
-  return result.rows[0]; // returns undefined if not found
+  return result.rows[0];
 }
 
-// Get every user (for the DM list in the sidebar)
+// Get a single user by their ID (used after login to load avatar info)
+async function getUserById(id) {
+  const result = await pool.query(
+    'SELECT id, username, avatar_color, avatar_emoji FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0];
+}
+
+// Get every user including their avatar info (for the sidebar list)
 async function getAllUsers() {
   const result = await pool.query(
-    'SELECT id, username FROM users ORDER BY username ASC'
+    'SELECT id, username, avatar_color, avatar_emoji FROM users ORDER BY username ASC'
   );
   return result.rows;
 }
 
-// Save a new message to the database
+// Save updated avatar settings for a user
+async function updateUserAvatar(userId, color, emoji) {
+  await pool.query(
+    'UPDATE users SET avatar_color = $1, avatar_emoji = $2 WHERE id = $3',
+    [color, emoji, userId]
+  );
+}
+
 async function saveMessage(senderId, room, content) {
   const result = await pool.query(
     'INSERT INTO messages (sender_id, room, content) VALUES ($1, $2, $3) RETURNING id, created_at',
@@ -81,10 +90,11 @@ async function saveMessage(senderId, room, content) {
   return result.rows[0];
 }
 
-// Get the last 50 messages for a room (newest messages, oldest first)
+// Get messages AND each sender's avatar info by joining the users table
 async function getMessages(room) {
   const result = await pool.query(
-    `SELECT m.id, m.content, m.created_at, m.sender_id, u.username AS sender_username
+    `SELECT m.id, m.content, m.created_at, m.sender_id,
+            u.username AS sender_username, u.avatar_color, u.avatar_emoji
      FROM messages m
      JOIN users u ON m.sender_id = u.id
      WHERE m.room = $1
@@ -95,4 +105,4 @@ async function getMessages(room) {
   return result.rows;
 }
 
-module.exports = { init, createUser, getUserByUsername, getAllUsers, saveMessage, getMessages };
+module.exports = { init, createUser, getUserByUsername, getUserById, getAllUsers, updateUserAvatar, saveMessage, getMessages };
