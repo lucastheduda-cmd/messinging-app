@@ -1,0 +1,17 @@
+# render.yaml - Tells Render.com how to run your app
+# Render reads this file automatically when you connect your GitHub repo.
+
+services:
+  - type: web
+    name: messaging-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true   # Render auto-generates a secure random value
+      - key: DATABASE_URL
+        sync: false           # You'll paste this in manually from Neon.tech

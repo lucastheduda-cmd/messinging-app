@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatApp</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="chat-page">
+
+  <!-- Mobile overlay: tap it to close the sidebar -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <div class="chat-layout">
+
+    <!-- ── Left Sidebar ────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+
+      <div class="sidebar-header">
+        <span class="app-name">💬 ChatApp</span>
+      </div>
+
+      <!-- Group Chat Section -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">Channels</p>
+        <button class="room-btn active" id="room-general" onclick="openRoom('general', '#general')">
+          # general
+        </button>
+      </div>
+
+      <!-- Direct Messages Section -->
+      <div class="sidebar-section">
+        <p class="sidebar-label">Direct Messages</p>
+        <div id="dm-list">
+          <!-- Users get added here by client.js -->
+        </div>
+      </div>
+
+      <!-- Logged-in user info + logout at the bottom -->
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar" id="my-avatar"></div>
+          <span id="my-username">Loading...</span>
+        </div>
+        <button class="logout-btn" onclick="logout()" title="Log out">⏻</button>
+      </div>
+
+    </aside>
+
+    <!-- ── Main Chat Area ──────────────────────────────── -->
+    <main class="chat-main">
+
+      <!-- Top bar: room name + hamburger button for mobile -->
+      <div class="chat-header">
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="chat-header-info">
+          <span class="chat-title" id="chat-title"># general</span>
+        </div>
+      </div>
+
+      <!-- Messages scroll here -->
+      <div class="messages-area" id="messages-area">
+        <p class="messages-placeholder">Loading messages...</p>
+      </div>
+
+      <!-- Message input bar -->
+      <div class="message-input-area">
+        <input
+          type="text"
+          id="message-input"
+          placeholder="Message #general"
+          maxlength="2000"
+          autocomplete="off"
+        />
+        <button class="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Socket.io client is served automatically by the server -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
